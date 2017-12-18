@@ -5,6 +5,7 @@ DisGOrd
 *.dll
 *.so
 *.dylib
+*.sh
 
 # Test binary, build with `go test -c`
 *.test
