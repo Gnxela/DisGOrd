@@ -15,8 +15,8 @@ type Bot struct {
 	Commands []Command
 }
 
-var bot Bot = Bot{"!", make([]Command, 0)};
-var token string;
+var bot Bot = Bot{"!", make([]Command, 0)}
+var token string
 
 func init() {
 	flag.StringVar(&token, "t", "", "Token")
@@ -34,11 +34,11 @@ func main() {
 		return
 	}
 
-	bot.Commands = append(bot.Commands, CommandPing{}, CommandRoll{}, CommandAvatar{})
+	initCommands()
 
 	discord.AddHandler(onMessage)
 
-	err = discord.Open();
+	err = discord.Open()
 	if err != nil {
 		fmt.Println("Error creating WebSocket,", err)
 		return
@@ -49,6 +49,11 @@ func main() {
 	<-close
 
 	discord.Close()
+}
+
+func initCommands() {
+	ping := NewCommandPing()//Only need to do this for commands that require data storage.
+	bot.Commands = append(bot.Commands, &ping, CommandRoll{}, CommandAvatar{})
 }
 
 func onMessage(session *discordgo.Session, mesage *discordgo.MessageCreate) {
