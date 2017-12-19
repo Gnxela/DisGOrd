@@ -5,12 +5,12 @@ import (
 	"strings"
 	"strconv"
 	"math/rand"
-		
+
 	"github.com/bwmarrin/discordgo"
 )
 
 type CommandRoll struct {
-	
+
 }
 
 func (c CommandRoll) Fire(bot *Bot, session *discordgo.Session, message *discordgo.MessageCreate) {

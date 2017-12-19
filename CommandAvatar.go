@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 	"strings"
-		
+
 	"github.com/bwmarrin/discordgo"
 )
 
 type CommandAvatar struct {
-	
+
 }
 
 func (c CommandAvatar) Fire(bot *Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
