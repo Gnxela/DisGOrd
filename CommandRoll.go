@@ -13,7 +13,7 @@ type CommandRoll struct {
 
 }
 
-func (c CommandRoll) Fire(bot *Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
+func (c *CommandRoll) Fire(bot *Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
 	strs := strings.Split(message.Content, " ")
 	if len(strs) < 2 {
 		session.ChannelMessageSend(message.ChannelID, "<@" + message.Author.ID + ">, !roll <sides>")
@@ -28,10 +28,10 @@ func (c CommandRoll) Fire(bot *Bot, session *discordgo.Session, message *discord
 	}
 }
 
-func (c CommandRoll) ShouldFire(bot *Bot, message *discordgo.MessageCreate) (bool) {
+func (c *CommandRoll) ShouldFire(bot *Bot, message *discordgo.MessageCreate) (bool) {
 	return strings.HasPrefix(message.Content, bot.Prefix + "roll")
 }
 
-func (c CommandRoll) IsAdminOnly() (bool) {
+func (c *CommandRoll) IsAdminOnly() (bool) {
 	return true
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"reflect"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -52,8 +53,8 @@ func main() {
 }
 
 func initCommands() {
-	ping := NewCommandPing()//Only need to do this for commands that require data storage.
-	bot.Commands = append(bot.Commands, &ping, CommandRoll{}, CommandAvatar{})
+	ping := NewCommandPing()//Create a variable so that we can refrence it
+	bot.Commands = append(bot.Commands, &ping, &CommandRoll{}, &CommandAvatar{})
 }
 
 func onMessage(session *discordgo.Session, mesage *discordgo.MessageCreate) {
@@ -62,6 +63,7 @@ func onMessage(session *discordgo.Session, mesage *discordgo.MessageCreate) {
 	}
 
 	for _, element := range bot.Commands {
+		fmt.Println(reflect.TypeOf(element))
 		if(element.ShouldFire(&bot, mesage)) {
 			element.Fire(&bot, session, mesage)
 		}
