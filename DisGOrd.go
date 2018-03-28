@@ -8,15 +8,12 @@ import (
 	"syscall"
 	"reflect"
 
+	"./Common"
+
 	"github.com/bwmarrin/discordgo"
 )
 
-type Bot struct {
-	Prefix string
-	Commands []Command
-}
-
-var bot Bot = Bot{"!", make([]Command, 0)}
+var bot common.Bot = common.Bot{"!", make([]common.Command, 0)}
 var token string
 
 func init() {

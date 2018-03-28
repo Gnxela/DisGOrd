@@ -4,6 +4,8 @@ import (
 	"strings"
 	"fmt"
 
+	"./Common"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -17,12 +19,12 @@ func NewCommandPing() (c CommandPing) {
 	return ping
 }
 
-func (c *CommandPing) Fire(bot *Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
+func (c *CommandPing) Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
 	c.count++
 	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, pong! (%d)", message.Author.ID, c.count))
 }
 
-func (c *CommandPing) ShouldFire(bot *Bot, message *discordgo.MessageCreate) (bool) {
+func (c *CommandPing) ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) (bool) {
 	return strings.HasPrefix(message.Content, bot.Prefix + "ping")
 }
 
