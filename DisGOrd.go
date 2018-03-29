@@ -6,7 +6,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"reflect"
+	"plugin"
+	"strings"
+	"io/ioutil"
+	"bytes"
 
 	"./Common"
 
@@ -50,19 +53,95 @@ func main() {
 }
 
 func initCommands() {
-	ping := NewCommandPing()//Create a variable so that we can refrence it
-	bot.Commands = append(bot.Commands, &ping, &CommandRoll{}, &CommandAvatar{})
+
 }
 
-func onMessage(session *discordgo.Session, mesage *discordgo.MessageCreate) {
-	if mesage.Author.ID == session.State.User.ID {
+func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
+	if message.Author.ID == session.State.User.ID {//Ignore messages from ourselves
 		return
 	}
 
-	for _, element := range bot.Commands {
-		fmt.Println(reflect.TypeOf(element))
-		if(element.ShouldFire(&bot, mesage)) {
-			element.Fire(&bot, session, mesage)
+	//Three designated commands.
+	if strings.HasPrefix(message.Content, bot.Prefix + "load") {
+		load(&bot, session, message)
+	} else if strings.HasPrefix(message.Content, bot.Prefix + "unload") {
+		
+	} else if strings.HasPrefix(message.Content, bot.Prefix + "list") {
+		list(&bot, session, message)
+	} else {
+		for _, element := range bot.Commands {
+			if(element.ShouldFire(&bot, message)) {
+				element.Fire(&bot, session, message)
+			}
 		}
 	}
+}
+
+func load(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
+	strs := strings.SplitN(message.Content, " ", 2)
+	if len(strs) != 2 {
+		session.ChannelMessageSend(message.ChannelID, "<@" + message.Author.ID + ">, !load <module>")
+		return
+	}
+	module := strs[1]
+	files, err := ioutil.ReadDir("./Modules")
+	if err != nil {
+		panic(err)
+	}
+	for _, file := range files {
+		if strings.EqualFold(module, file.Name()) {
+			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, loading '%s'.", message.Author.ID, module))
+			p, err := plugin.Open("./Modules/" + module)
+			if err != nil {
+				panic(err)
+			}
+			command := common.Command{}
+			fire, err := p.Lookup("Fire")
+			if err != nil {
+				panic(err)
+			}
+			shouldFire, err := p.Lookup("ShouldFire")
+			if err != nil {
+				panic(err)
+			}
+			isAdminOnly, err := p.Lookup("IsAdminOnly")
+			if err != nil {
+				panic(err)
+			}
+			command.Module = module
+			command.Fire = fire.(func(*common.Bot, *discordgo.Session, *discordgo.MessageCreate))
+			command.ShouldFire = shouldFire.(func(*common.Bot, *discordgo.MessageCreate) bool)
+			command.IsAdminOnly = isAdminOnly.(func() bool)
+			bot.Commands = append(bot.Commands, command)
+		}
+	}
+}
+
+func list(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
+	files, err := ioutil.ReadDir("./Modules")
+	if err != nil {
+		panic(err)
+	}
+
+	var buffer bytes.Buffer
+	buffer.WriteString("Modules:\n```diff\n")
+	for _, file := range files {
+		if !strings.HasSuffix(file.Name(), ".so") {
+			continue
+		}
+		found := false
+		for _, module := range bot.Commands {
+			if module.Module == file.Name() {
+				found = true
+				break
+			}
+		}
+		if found {
+			buffer.WriteString(fmt.Sprintf("+ %s\n", file.Name()))
+		} else {
+			buffer.WriteString(fmt.Sprintf("- %s\n", file.Name()))
+		}
+	}
+	buffer.WriteString("```")
+	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, %s", message.Author.ID, buffer.String()))
 }
