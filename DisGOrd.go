@@ -103,10 +103,17 @@ func unload(bot *common.Bot, session *discordgo.Session, message *discordgo.Mess
 	module := strs[1]
 	for index, mod := range bot.Commands {
 		if mod.Module == module {
+			/*
+				According to the docs: "A plugin is only initialized once, and cannot be closed.A plugin is only initialized once, and cannot be closed."
+				I need to look into what the garbaage disposal of Go, and see if me reloading the plugins is bad.
+				If plugins can't be unloaded and cleaned by GC, then I need to store them and reuse them, to avoid memory problems.
+			*/
 			bot.Commands = append(bot.Commands[:index], bot.Commands[index + 1:]...)
 			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, unloaded '%s'.", message.Author.ID, module))
+			return
 		}
 	}
+	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, failed to unload '%s'.", message.Author.ID, module))
 }
 
 func loadModule(module string) (err error) {
