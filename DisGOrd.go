@@ -35,8 +35,6 @@ func main() {
 		return
 	}
 
-	initCommands()
-
 	discord.AddHandler(onMessage)
 
 	err = discord.Open()
@@ -50,10 +48,6 @@ func main() {
 	<-close
 
 	discord.Close()
-}
-
-func initCommands() {
-
 }
 
 func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
@@ -147,8 +141,8 @@ func list(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 		panic(err)
 	}
 
-	var buffer bytes.Buffer
-	buffer.WriteString("Modules:\n```diff\n")
+	var loadedBuffer bytes.Buffer
+	var unloadedBuffer bytes.Buffer
 	for _, file := range files {
 		if !strings.HasSuffix(file.Name(), ".so") {
 			continue
@@ -161,11 +155,16 @@ func list(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 			}
 		}
 		if found {
-			buffer.WriteString(fmt.Sprintf("+ %s\n", file.Name()))
+			loadedBuffer.WriteString(fmt.Sprintf("+ %s\n", file.Name()))
 		} else {
-			buffer.WriteString(fmt.Sprintf("- %s\n", file.Name()))
+			unloadedBuffer.WriteString(fmt.Sprintf("- %s\n", file.Name()))
 		}
 	}
-	buffer.WriteString("```")
-	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, %s", message.Author.ID, buffer.String()))
+	if loadedBuffer.String() == "" {
+		loadedBuffer.WriteString("  None\n")
+	}
+	if unloadedBuffer.String() == "" {
+		unloadedBuffer.WriteString("  None\n")
+	}
+	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, ```diff\nLoaded Modules:\n%sUnloaded Modules:\n%s```", message.Author.ID, loadedBuffer.String(), unloadedBuffer.String()))
 }
