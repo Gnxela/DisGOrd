@@ -6,16 +6,12 @@ import (
 	"strconv"
 	"math/rand"
 
-	"./Common"
+	"../Common"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-type CommandRoll struct {
-
-}
-
-func (c *CommandRoll) Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
+func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
 	strs := strings.Split(message.Content, " ")
 	if len(strs) < 2 {
 		session.ChannelMessageSend(message.ChannelID, "<@" + message.Author.ID + ">, !roll <sides>")
@@ -30,10 +26,10 @@ func (c *CommandRoll) Fire(bot *common.Bot, session *discordgo.Session, message 
 	}
 }
 
-func (c *CommandRoll) ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) (bool) {
+func ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) (bool) {
 	return strings.HasPrefix(message.Content, bot.Prefix + "roll")
 }
 
-func (c *CommandRoll) IsAdminOnly() (bool) {
+func IsAdminOnly() (bool) {
 	return true
 }
