@@ -8,15 +8,22 @@ import (
 	"syscall"
 	"plugin"
 	"strings"
+	"io"
 	"io/ioutil"
 	"bytes"
+	"encoding/json"
 
 	"./Common"
 
 	"github.com/bwmarrin/discordgo"
 )
 
+type Config struct {
+	LoadedModules map[string]bool//The value will never be used.
+}
+
 var bot common.Bot = common.Bot{"!", make([]common.Command, 0)}
+var config Config//Would store in bot, but don't think modules need access to it.
 var token string
 
 func init() {
@@ -29,6 +36,8 @@ func init() {
 }
 
 func main() {
+	loadConfig()
+
 	discord, err := discordgo.New("Bot " + token)
 	if err != nil {
 		fmt.Println("Error creating Discord session,", err)
@@ -36,6 +45,8 @@ func main() {
 	}
 
 	discord.AddHandler(onMessage)
+
+	enableLoadedModules()
 
 	err = discord.Open()
 	if err != nil {
@@ -48,6 +59,38 @@ func main() {
 	<-close
 
 	discord.Close()
+}
+
+func enableLoadedModules() {
+	for module, _ := range config.LoadedModules {
+		loadModule(module)
+	}
+}
+
+func saveConfig() {
+	configFile, _ := os.OpenFile("config.json", os.O_WRONLY|os.O_TRUNC, 0755)//Need to look into FileModes and general UNIX file permissions.
+	defer configFile.Close()
+	decoder := json.NewEncoder(configFile)
+	err := decoder.Encode(&config)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func loadConfig() {
+	configFile, _ := os.OpenFile("config.json", os.O_RDONLY|os.O_CREATE, 0755)//Need to look into FileModes and general UNIX file permissions.
+	defer configFile.Close()
+	decoder := json.NewDecoder(configFile)
+	config = Config{}
+	err := decoder.Decode(&config)
+	if err != nil {
+		if err == io.EOF {
+			config.LoadedModules = make(map[string]bool, 0)//When no file is read, map is never initialised, so we need to do it manually.
+			saveConfig()
+			return
+		}
+		panic(err)
+	}
 }
 
 func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
@@ -109,6 +152,8 @@ func unload(bot *common.Bot, session *discordgo.Session, message *discordgo.Mess
 				If plugins can't be unloaded and cleaned by GC, then I need to store them and reuse them, to avoid memory problems.
 			*/
 			bot.Commands = append(bot.Commands[:index], bot.Commands[index + 1:]...)
+			delete(config.LoadedModules, module)
+			saveConfig()
 			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, unloaded '%s'.", message.Author.ID, module))
 			return
 		}
@@ -139,6 +184,9 @@ func loadModule(module string) (err error) {
 	command.ShouldFire = shouldFire.(func(*common.Bot, *discordgo.MessageCreate) bool)
 	command.IsAdminOnly = isAdminOnly.(func() bool)
 	bot.Commands = append(bot.Commands, command)
+	config.LoadedModules[module] = true
+	saveConfig()
+	fmt.Printf("Loaded %s\n", module)
 	return
 }
 
