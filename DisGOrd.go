@@ -19,26 +19,30 @@ import (
 )
 
 type Config struct {
+	Token string
 	LoadedModules map[string]bool//The value will never be used.
 }
 
 var bot common.Bot = common.Bot{"!", make([]common.Command, 0)}
 var config Config//Would store in bot, but don't think modules need access to it.
-var token string
 
 func init() {
-	flag.StringVar(&token, "t", "", "Token")
-	flag.Parse()
-	if token == "" {
-		flag.Usage()
-		os.Exit(0)
+	loadConfig()
+	if config.Token == "" {
+		t := ""
+		flag.StringVar(&t, "t", "", "Token")
+		flag.Parse()
+		if t == "" {
+			flag.Usage()
+			os.Exit(0)
+		}
+		config.Token = t
+		saveConfig()
 	}
 }
 
 func main() {
-	loadConfig()
-
-	discord, err := discordgo.New("Bot " + token)
+	discord, err := discordgo.New("Bot " + config.Token)
 	if err != nil {
 		fmt.Println("Error creating Discord session,", err)
 		return
