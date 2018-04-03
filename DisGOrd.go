@@ -23,7 +23,7 @@ type Config struct {
 	LoadedModules map[string]bool//The value will never be used.
 }
 
-var bot common.Bot = common.Bot{"!", make([]common.Command, 0)}
+var bot common.Bot = common.Bot{make([]common.Guild, 0), "!", make([]common.Command, 0)}
 var config Config//Would store in bot, but don't think modules need access to it.
 
 func init() {
@@ -49,6 +49,7 @@ func main() {
 	}
 
 	discord.AddHandler(onMessage)
+	discord.AddHandlerOnce(onReady)
 
 	enableLoadedModules()
 
@@ -98,7 +99,25 @@ func loadConfig() {
 	}
 }
 
+func onReady(session *discordgo.Session, ready *discordgo.Ready) {
+	guilds, err := session.UserGuilds(100, "", "")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Logged into %d guilds.\n", len(guilds))
+	for _, guild := range guilds {
+		guild := common.Guild{guild, false}
+		bot.Guilds = append(bot.Guilds, guild)
+		go loadGuild(guild)
+	}
+}
+
+func loadGuild(guild common.Guild) {
+	guild.Ready = true
+}
+
 func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
+	
 	if message.Author.ID == session.State.User.ID {//Ignore messages from ourselves
 		return
 	}
@@ -191,7 +210,7 @@ func loadModule(module string) (err error) {
 	bot.Commands = append(bot.Commands, command)
 	config.LoadedModules[module] = true
 	saveConfig()
-	fmt.Printf("Loaded %s\n", module)
+	fmt.Printf("Loaded %s.\n", module)
 	return
 }
 
