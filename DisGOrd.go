@@ -74,8 +74,9 @@ func enableLoadedModules() {
 func saveConfig() {
 	configFile, _ := os.OpenFile("config.json", os.O_WRONLY|os.O_TRUNC, 0755)//Need to look into FileModes and general UNIX file permissions.
 	defer configFile.Close()
-	decoder := json.NewEncoder(configFile)
-	err := decoder.Encode(&config)
+	encoder := json.NewEncoder(configFile)
+	encoder.SetIndent("", "\t")
+	err := encoder.Encode(&config)
 	if err != nil {
 		panic(err)
 	}
