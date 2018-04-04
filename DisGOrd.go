@@ -130,23 +130,23 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 		return
 	}
 
-	fmt.Printf("%t", checkAdmin(session, message.ChannelID, message.Author.ID))
-
 	if message.Author.ID == session.State.User.ID {//Ignore messages from ourselves
 		return
 	}
 
-	//Three designated commands.
-	if strings.HasPrefix(message.Content, bot.Prefix + "load") {
+	//Three designated commands. Lazy evaluation means we wont be checking for admin unnessessarily.
+	if strings.HasPrefix(message.Content, bot.Prefix + "load") && checkAdmin(session, message.ChannelID, message.Author.ID){
 		load(&bot, session, message)
-	} else if strings.HasPrefix(message.Content, bot.Prefix + "unload") {
+	} else if strings.HasPrefix(message.Content, bot.Prefix + "unload") && checkAdmin(session, message.ChannelID, message.Author.ID){
 		unload(&bot, session, message)
-	} else if strings.HasPrefix(message.Content, bot.Prefix + "list") {
+	} else if strings.HasPrefix(message.Content, bot.Prefix + "list") && checkAdmin(session, message.ChannelID, message.Author.ID){
 		list(&bot, session, message)
 	} else {
 		for _, element := range bot.Commands {
-			if(element.ShouldFire(&bot, message)) {
-				element.Fire(&bot, session, message)
+			if !element.IsAdminOnly() || (element.IsAdminOnly() && checkAdmin(session, message.ChannelID, message.Author.ID)) {
+				if element.ShouldFire(&bot, message) {
+					element.Fire(&bot, session, message)
+				}
 			}
 		}
 	}
