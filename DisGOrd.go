@@ -54,6 +54,7 @@ func main() {
 	enableLoadedModules()
 
 	err = discord.Open()
+	defer discord.Close()
 	if err != nil {
 		fmt.Println("Error creating WebSocket,", err)
 		return
@@ -62,8 +63,6 @@ func main() {
 	close := make(chan os.Signal, 1)
 	signal.Notify(close, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-close
-
-	discord.Close()
 }
 
 func enableLoadedModules() {
@@ -117,16 +116,21 @@ func loadGuild(session *discordgo.Session, guild *common.Guild) {
 	if err != nil {
 		panic(err)
 	}
+
 	for _, channel := range g.Channels {
 		bot.ChannelMap[channel.ID] = guild
 	}
+
 	guild.Ready = true
+	fmt.Printf("Loaded guild: %s\n", guild.Guild.Name)
 }
 
 func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	if !bot.ChannelMap[message.ChannelID].Ready {
 		return
 	}
+
+	fmt.Printf("%t", checkAdmin(session, message.ChannelID, message.Author.ID))
 
 	if message.Author.ID == session.State.User.ID {//Ignore messages from ourselves
 		return
@@ -146,6 +150,15 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 			}
 		}
 	}
+}
+
+func checkAdmin(session *discordgo.Session, channelID string, userID string) (bool){
+	permissions, err := session.State.UserChannelPermissions(userID, channelID)
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		return false
+	}
+	return permissions&discordgo.PermissionAdministrator == discordgo.PermissionAdministrator
 }
 
 func load(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
