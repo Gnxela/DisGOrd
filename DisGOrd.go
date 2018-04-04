@@ -67,7 +67,10 @@ func main() {
 
 func enableLoadedModules() {
 	for module, _ := range config.LoadedModules {
-		loadModule(module)
+		err := loadModule(module)
+		if err != nil {
+			fmt.Printf("Failed to load '%s': %s\n", module, err)
+		}
 	}
 }
 
