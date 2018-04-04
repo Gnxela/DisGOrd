@@ -23,7 +23,7 @@ type Config struct {
 	LoadedModules map[string]bool//The value will never be used.
 }
 
-var bot common.Bot = common.Bot{make([]common.Guild, 0), "!", make([]common.Command, 0)}
+var bot common.Bot = common.Bot{make([]*common.Guild, 0), make(map[string]*common.Guild, 0), "!", make([]*common.Command, 0)}
 var config Config//Would store in bot, but don't think modules need access to it.
 
 func init() {
@@ -107,17 +107,27 @@ func onReady(session *discordgo.Session, ready *discordgo.Ready) {
 	fmt.Printf("Logged into %d guilds.\n", len(guilds))
 	for _, guild := range guilds {
 		guild := common.Guild{guild, false}
-		bot.Guilds = append(bot.Guilds, guild)
-		go loadGuild(guild)
+		bot.Guilds = append(bot.Guilds, &guild)
+		go loadGuild(session, &guild)
 	}
 }
 
-func loadGuild(guild common.Guild) {
+func loadGuild(session *discordgo.Session, guild *common.Guild) {
+	g, err := session.Guild(guild.Guild.ID)
+	if err != nil {
+		panic(err)
+	}
+	for _, channel := range g.Channels {
+		bot.ChannelMap[channel.ID] = guild
+	}
 	guild.Ready = true
 }
 
 func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
-	
+	if !bot.ChannelMap[message.ChannelID].Ready {
+		return
+	}
+
 	if message.Author.ID == session.State.User.ID {//Ignore messages from ourselves
 		return
 	}
@@ -207,7 +217,7 @@ func loadModule(module string) (err error) {
 	command.Fire = fire.(func(*common.Bot, *discordgo.Session, *discordgo.MessageCreate))
 	command.ShouldFire = shouldFire.(func(*common.Bot, *discordgo.MessageCreate) bool)
 	command.IsAdminOnly = isAdminOnly.(func() bool)
-	bot.Commands = append(bot.Commands, command)
+	bot.Commands = append(bot.Commands, &command)
 	config.LoadedModules[module] = true
 	saveConfig()
 	fmt.Printf("Loaded %s.\n", module)
