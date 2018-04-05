@@ -10,7 +10,7 @@ import (
 )
 
 func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
-	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, https://cdn.discordapp.com/avatars/%s/%s.png", message.Author.ID, message.Author.ID, message.Author.Avatar))
+	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, %s", message.Author.ID, message.Author.AvatarURL("")))
 }
 
 func ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) (bool) {
