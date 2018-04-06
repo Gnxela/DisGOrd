@@ -1,7 +1,5 @@
 package common
 
-import "github.com/bwmarrin/discordgo"
-
 type Bot struct {
 	Guilds []*Guild
 	ChannelMap map[string]*Guild//A map that maps channel IDs to their guild. Populated when a guild is loaded
@@ -10,6 +8,6 @@ type Bot struct {
 }
 
 type Guild struct {
-	Guild *discordgo.UserGuild
+	ID string
 	Ready bool
 }

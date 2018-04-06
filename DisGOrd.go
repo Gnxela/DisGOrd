@@ -107,15 +107,15 @@ func onReady(session *discordgo.Session, ready *discordgo.Ready) {
 		panic(err)
 	}
 	fmt.Printf("Logged into %d guilds.\n", len(guilds))
-	for _, guild := range guilds {
-		guild := common.Guild{guild, false}
+	for _, g := range guilds {
+		guild := common.Guild{g.ID, false}
 		bot.Guilds = append(bot.Guilds, &guild)
 		go loadGuild(session, &guild)
 	}
 }
 
 func loadGuild(session *discordgo.Session, guild *common.Guild) {
-	g, err := session.Guild(guild.Guild.ID)
+	g, err := session.Guild(guild.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -125,24 +125,28 @@ func loadGuild(session *discordgo.Session, guild *common.Guild) {
 	}
 
 	guild.Ready = true
-	fmt.Printf("Loaded guild: %s\n", guild.Guild.Name)
+	fmt.Printf("Loaded guild: %s\n", guild.ID)
 }
 
 func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
-	if !bot.ChannelMap[message.ChannelID].Ready {
+	if !bot.ChannelMap[message.ChannelID].Ready {//Ignore messages to guilds that aren't ready.
 		return
 	}
 
-	if message.Author.ID == session.State.User.ID {//Ignore messages from ourselves
+	if message.Author.Bot {//Ignore messages from bots.
+		return
+	}
+
+	if message.Author.ID == session.State.User.ID {//Ignore messages from ourselves.
 		return
 	}
 
 	//Three designated commands. Lazy evaluation means we wont be checking for admin unnessessarily.
-	if strings.HasPrefix(message.Content, bot.Prefix + "load") && checkAdmin(session, message.ChannelID, message.Author.ID){
+	if strings.HasPrefix(message.Content, bot.Prefix + "load") && checkAdmin(session, message.ChannelID, message.Author.ID) {
 		load(&bot, session, message)
-	} else if strings.HasPrefix(message.Content, bot.Prefix + "unload") && checkAdmin(session, message.ChannelID, message.Author.ID){
+	} else if strings.HasPrefix(message.Content, bot.Prefix + "unload") && checkAdmin(session, message.ChannelID, message.Author.ID) {
 		unload(&bot, session, message)
-	} else if strings.HasPrefix(message.Content, bot.Prefix + "list") && checkAdmin(session, message.ChannelID, message.Author.ID){
+	} else if strings.HasPrefix(message.Content, bot.Prefix + "list") && checkAdmin(session, message.ChannelID, message.Author.ID) {
 		list(&bot, session, message)
 	} else {
 		for _, element := range bot.Commands {
