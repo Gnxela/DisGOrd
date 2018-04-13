@@ -152,7 +152,9 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 		for _, element := range bot.Commands {
 			if !element.IsAdminOnly() || (element.IsAdminOnly() && checkAdmin(session, message.ChannelID, message.Author.ID)) {
 				if element.ShouldFire(&bot, message) {
-					element.Fire(&bot, session, message)
+					if !element.Fire(&bot, session, message) {
+						break
+					}
 				}
 			}
 		}
@@ -238,7 +240,7 @@ func loadModule(module string) (err error) {
 		return
 	}
 	command.Module = module
-	command.Fire = fire.(func(*common.Bot, *discordgo.Session, *discordgo.MessageCreate))
+	command.Fire = fire.(func(*common.Bot, *discordgo.Session, *discordgo.MessageCreate) bool)
 	command.ShouldFire = shouldFire.(func(*common.Bot, *discordgo.MessageCreate) bool)
 	command.IsAdminOnly = isAdminOnly.(func() bool)
 	bot.Commands = append(bot.Commands, &command)

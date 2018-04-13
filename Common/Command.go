@@ -9,7 +9,7 @@ type Command struct {
 	ShouldFire(bot *Bot, message *discordgo.MessageCreate) bool
 	IsAdminOnly() bool*/
 	Module string
-	Fire func(bot *Bot, session *discordgo.Session, message *discordgo.MessageCreate)
+	Fire func(bot *Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool
 	ShouldFire func(bot *Bot, message *discordgo.MessageCreate) bool
 	IsAdminOnly func() bool
 }
