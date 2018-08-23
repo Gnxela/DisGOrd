@@ -1,17 +1,17 @@
 package main
 
 import (
-	"fmt"
-	"flag"
-	"os"
-	"os/signal"
-	"syscall"
-	"plugin"
-	"strings"
-	"io"
-	"io/ioutil"
 	"bytes"
 	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"os/signal"
+	"plugin"
+	"strings"
+	"syscall"
 
 	"./Common"
 
@@ -19,12 +19,12 @@ import (
 )
 
 type Config struct {
-	Token string
-	LoadedModules map[string]bool//The value will never be used.
+	Token         string
+	LoadedModules map[string]bool //The value will never be used.
 }
 
 var bot common.Bot = common.Bot{make([]*common.Guild, 0), make(map[string]*common.Guild, 0), "!", make([]*common.Command, 0)}
-var config Config//Would store in bot, but don't think modules need access to it.
+var config Config //Would store in bot, but don't think modules need access to it.
 
 func init() {
 	loadConfig()
@@ -75,7 +75,7 @@ func enableLoadedModules() {
 }
 
 func saveConfig() {
-	configFile, _ := os.OpenFile("config.json", os.O_WRONLY|os.O_TRUNC, 0755)//Need to look into FileModes and general UNIX file permissions.
+	configFile, _ := os.OpenFile("config.json", os.O_WRONLY|os.O_TRUNC, 0755) //Need to look into FileModes and general UNIX file permissions.
 	defer configFile.Close()
 	encoder := json.NewEncoder(configFile)
 	encoder.SetIndent("", "\t")
@@ -86,14 +86,14 @@ func saveConfig() {
 }
 
 func loadConfig() {
-	configFile, _ := os.OpenFile("config.json", os.O_RDONLY|os.O_CREATE, 0755)//Need to look into FileModes and general UNIX file permissions.
+	configFile, _ := os.OpenFile("config.json", os.O_RDONLY|os.O_CREATE, 0755) //Need to look into FileModes and general UNIX file permissions.
 	defer configFile.Close()
 	decoder := json.NewDecoder(configFile)
 	config = Config{}
 	err := decoder.Decode(&config)
 	if err != nil {
 		if err == io.EOF {
-			config.LoadedModules = make(map[string]bool, 0)//When no file is read, map is never initialised, so we need to do it manually.
+			config.LoadedModules = make(map[string]bool, 0) //When no file is read, map is never initialised, so we need to do it manually.
 			saveConfig()
 			return
 		}
@@ -129,24 +129,24 @@ func loadGuild(session *discordgo.Session, guild *common.Guild) {
 }
 
 func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
-	if !bot.ChannelMap[message.ChannelID].Ready {//Ignore messages to guilds that aren't ready.
+	if !bot.ChannelMap[message.ChannelID].Ready { //Ignore messages to guilds that aren't ready.
 		return
 	}
 
-	if message.Author.Bot {//Ignore messages from bots.
+	if message.Author.Bot { //Ignore messages from bots.
 		return
 	}
 
-	if message.Author.ID == session.State.User.ID {//Ignore messages from ourselves.
+	if message.Author.ID == session.State.User.ID { //Ignore messages from ourselves.
 		return
 	}
 
 	//Three designated commands. Lazy evaluation means we wont be checking for admin unnessessarily.
-	if strings.HasPrefix(message.Content, bot.Prefix + "load") && checkAdmin(session, message.ChannelID, message.Author.ID) {
+	if strings.HasPrefix(message.Content, bot.Prefix+"load") && checkAdmin(session, message.ChannelID, message.Author.ID) {
 		load(&bot, session, message)
-	} else if strings.HasPrefix(message.Content, bot.Prefix + "unload") && checkAdmin(session, message.ChannelID, message.Author.ID) {
+	} else if strings.HasPrefix(message.Content, bot.Prefix+"unload") && checkAdmin(session, message.ChannelID, message.Author.ID) {
 		unload(&bot, session, message)
-	} else if strings.HasPrefix(message.Content, bot.Prefix + "list") && checkAdmin(session, message.ChannelID, message.Author.ID) {
+	} else if strings.HasPrefix(message.Content, bot.Prefix+"list") && checkAdmin(session, message.ChannelID, message.Author.ID) {
 		list(&bot, session, message)
 	} else {
 		for _, element := range bot.Commands {
@@ -161,11 +161,11 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	}
 }
 
-func checkAdmin(session *discordgo.Session, channelID string, userID string) (bool){
+func checkAdmin(session *discordgo.Session, channelID string, userID string) bool {
 	return checkPermission(session, discordgo.PermissionAdministrator, channelID, userID)
 }
 
-func checkPermission(session *discordgo.Session, permission int, channelID string, userID string) (bool) {
+func checkPermission(session *discordgo.Session, permission int, channelID string, userID string) bool {
 	permissions, err := session.State.UserChannelPermissions(userID, channelID)
 	if err != nil {
 		fmt.Printf("%s\n", err)
@@ -177,7 +177,7 @@ func checkPermission(session *discordgo.Session, permission int, channelID strin
 func load(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
 	strs := strings.SplitN(message.Content, " ", 2)
 	if len(strs) != 2 {
-		session.ChannelMessageSend(message.ChannelID, "<@" + message.Author.ID + ">, !load <module>")
+		session.ChannelMessageSend(message.ChannelID, "<@"+message.Author.ID+">, !load <module>")
 		return
 	}
 	module := strs[1]
@@ -200,7 +200,7 @@ func load(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 func unload(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
 	strs := strings.SplitN(message.Content, " ", 2)
 	if len(strs) != 2 {
-		session.ChannelMessageSend(message.ChannelID, "<@" + message.Author.ID + ">, !unload <module>")
+		session.ChannelMessageSend(message.ChannelID, "<@"+message.Author.ID+">, !unload <module>")
 		return
 	}
 	module := strs[1]
@@ -211,14 +211,14 @@ func unload(bot *common.Bot, session *discordgo.Session, message *discordgo.Mess
 				I need to look into what the garbaage disposal of Go, and see if me reloading the plugins is bad.
 				If plugins can't be unloaded and cleaned by GC, then I need to store them and reuse them, to avoid memory problems.
 			*/
-			bot.Commands = append(bot.Commands[:index], bot.Commands[index + 1:]...)
+			bot.Commands = append(bot.Commands[:index], bot.Commands[index+1:]...)
 			delete(config.LoadedModules, module)
 			saveConfig()
 			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, unloaded '%s'.", message.Author.ID, module))
 			return
 		}
 	}
-	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, failed to unload '%s'.", message.Author.ID, module))
+	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, failed to unload '%s'. Module not found (maybe it wasn't loaded?).", message.Author.ID, module))
 }
 
 func loadModule(module string) (err error) {
@@ -262,15 +262,16 @@ func list(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 		if !strings.HasSuffix(file.Name(), ".so") {
 			continue
 		}
-		found := false
+		found := 0
 		for _, module := range bot.Commands {
 			if module.Module == file.Name() {
-				found = true
-				break
+				found++
 			}
 		}
-		if found {
+		if found == 1 {
 			loadedBuffer.WriteString(fmt.Sprintf("+ %s\n", file.Name()))
+		} else if found > 1 {
+			loadedBuffer.WriteString(fmt.Sprintf("+ %s (%d)\n", file.Name(), found))
 		} else {
 			unloadedBuffer.WriteString(fmt.Sprintf("- %s\n", file.Name()))
 		}

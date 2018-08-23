@@ -13,10 +13,10 @@ func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, %s", message.Author.ID, message.Author.AvatarURL("")))
 }
 
-func ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) (bool) {
-	return strings.HasPrefix(message.Content, bot.Prefix + "avatar")
+func ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) bool {
+	return strings.HasPrefix(message.Content, bot.Prefix+"avatar")
 }
 
-func IsAdminOnly() (bool) {
+func IsAdminOnly() bool {
 	return true
 }
