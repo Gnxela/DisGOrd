@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"errors"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -239,6 +240,19 @@ func loadModule(module string) (err error) {
 	if err != nil {
 		return
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("%s failed to load: %s\n", module, r)
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("loadModule() unknown recovery")
+			}
+		}
+	}()
 	command.Module = module
 	command.Fire = fire.(func(*common.Bot, *discordgo.Session, *discordgo.MessageCreate) bool)
 	command.ShouldFire = shouldFire.(func(*common.Bot, *discordgo.MessageCreate) bool)
