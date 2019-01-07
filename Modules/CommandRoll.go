@@ -36,5 +36,5 @@ func ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) bool {
 }
 
 func IsAdminOnly() bool {
-	return true
+	return false
 }
