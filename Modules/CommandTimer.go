@@ -11,6 +11,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func GetData(bot *common.Bot) common.Data {
+	return common.Data{"Timer", "Sets a timer for the specified number of seconds. The caller will be @'d when the timer is finished.", "!timer <seconds>", common.PRIORITY_MEDIUM}
+}
+
 func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool {
 	strs := strings.Split(message.Content, " ")
 	if len(strs) < 2 {

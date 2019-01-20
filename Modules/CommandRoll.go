@@ -11,7 +11,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) (bool) {
+func GetData(bot *common.Bot) common.Data {
+	return common.Data{"Roll", "Rolls a dice with the number of sides specified.", "!roll <sides>", common.PRIORITY_MEDIUM}
+}
+
+func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool {
 	strs := strings.Split(message.Content, " ")
 	if len(strs) < 2 {
 		session.ChannelMessageSend(message.ChannelID, "<@"+message.Author.ID+">, !roll <sides>")

@@ -9,8 +9,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) (bool) {
-	name := message.Content[strings.Index(message.Content, " ") + 1:]
+func GetData(bot *common.Bot) common.Data {
+	return common.Data{"Dad", "Makes funny jokes.", "", common.PRIORITY_LOWEST}
+}
+
+func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool {
+	name := message.Content[strings.Index(message.Content, " ")+1:]
 	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("Hi %s, I'm Dad.", name))
 	return true
 }

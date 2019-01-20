@@ -3,10 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"errors"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -21,10 +21,10 @@ import (
 
 type Config struct {
 	Token         string
-	LoadedModules map[string]bool //The value will never be used.
+	LoadedModules map[string]struct{}
 }
 
-var bot common.Bot = common.Bot{make([]*common.Guild, 0), make(map[string]*common.Guild, 0), "!", make([]*common.Command, 0)}
+var bot common.Bot = common.Bot{make([]*common.Guild, 0), make(map[string]*common.Guild, 0), "!", make(map[common.Priority][]*common.Command, 0)}
 var config Config //Would store in bot, but don't think modules need access to it.
 
 func init() {
@@ -94,7 +94,7 @@ func loadConfig() {
 	err := decoder.Decode(&config)
 	if err != nil {
 		if err == io.EOF {
-			config.LoadedModules = make(map[string]bool, 0) //When no file is read, map is never initialised, so we need to do it manually.
+			config.LoadedModules = make(map[string]struct{}, 0) //When no file is read, map is never initialised, so we need to do it manually.
 			saveConfig()
 			return
 		}
@@ -150,11 +150,13 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(message.Content, bot.Prefix+"list") && checkAdmin(session, message.ChannelID, message.Author.ID) {
 		list(&bot, session, message)
 	} else {
-		for _, element := range bot.Commands {
-			if !element.IsAdminOnly() || (element.IsAdminOnly() && checkAdmin(session, message.ChannelID, message.Author.ID)) {
-				if element.ShouldFire(&bot, message) {
-					if !element.Fire(&bot, session, message) {
-						break
+		for _, commands := range bot.Commands {
+			for _, element := range commands {
+				if !element.IsAdminOnly() || (element.IsAdminOnly() && checkAdmin(session, message.ChannelID, message.Author.ID)) {
+					if element.ShouldFire(&bot, message) {
+						if !element.Fire(&bot, session, message) {
+							break
+						}
 					}
 				}
 			}
@@ -205,18 +207,20 @@ func unload(bot *common.Bot, session *discordgo.Session, message *discordgo.Mess
 		return
 	}
 	module := strs[1]
-	for index, mod := range bot.Commands {
-		if mod.Module == module {
-			/*
-				According to the docs: "A plugin is only initialized once, and cannot be closed.A plugin is only initialized once, and cannot be closed."
-				I need to look into what the garbaage disposal of Go, and see if me reloading the plugins is bad.
-				If plugins can't be unloaded and cleaned by GC, then I need to store them and reuse them, to avoid memory problems.
-			*/
-			bot.Commands = append(bot.Commands[:index], bot.Commands[index+1:]...)
-			delete(config.LoadedModules, module)
-			saveConfig()
-			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, unloaded '%s'.", message.Author.ID, module))
-			return
+	for priority, commands := range bot.Commands {
+		for index, mod := range commands {
+			if mod.Module == module {
+				/*
+					According to the docs: "A plugin is only initialized once, and cannot be closed.A plugin is only initialized once, and cannot be closed."
+					I need to look into what the garbaage disposal of Go, and see if me reloading the plugins is bad.
+					If plugins can't be unloaded and cleaned by GC, then I need to store them and reuse them, to avoid memory problems.
+				*/
+				bot.Commands[priority] = append(bot.Commands[priority][:index], bot.Commands[priority][index+1:]...)
+				delete(config.LoadedModules, module)
+				saveConfig()
+				session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, unloaded '%s'.", message.Author.ID, module))
+				return
+			}
 		}
 	}
 	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, failed to unload '%s'. Module not found (maybe it wasn't loaded?).", message.Author.ID, module))
@@ -228,6 +232,10 @@ func loadModule(module string) (err error) {
 		return
 	}
 	command := common.Command{}
+	getData, err := p.Lookup("GetData")
+	if err != nil {
+		return
+	}
 	fire, err := p.Lookup("Fire")
 	if err != nil {
 		return
@@ -254,11 +262,15 @@ func loadModule(module string) (err error) {
 		}
 	}()
 	command.Module = module
+	command.GetData = getData.(func(*common.Bot) common.Data)
 	command.Fire = fire.(func(*common.Bot, *discordgo.Session, *discordgo.MessageCreate) bool)
 	command.ShouldFire = shouldFire.(func(*common.Bot, *discordgo.MessageCreate) bool)
 	command.IsAdminOnly = isAdminOnly.(func() bool)
-	bot.Commands = append(bot.Commands, &command)
-	config.LoadedModules[module] = true
+
+	data := command.GetData(&bot)
+
+	bot.Commands[data.Priority] = append(bot.Commands[data.Priority], &command)
+	config.LoadedModules[module] = struct{}{}
 	saveConfig()
 	fmt.Printf("Loaded %s.\n", module)
 	return
@@ -277,15 +289,17 @@ func list(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 			continue
 		}
 		found := 0
-		for _, module := range bot.Commands {
-			if module.Module == file.Name() {
-				found++
+		for _, commands := range bot.Commands {
+			for _, module := range commands {
+				if module.Module == file.Name() {
+					found++
+				}
 			}
 		}
 		if found == 1 {
 			loadedBuffer.WriteString(fmt.Sprintf("+ %s\n", file.Name()))
 		} else if found > 1 {
-			loadedBuffer.WriteString(fmt.Sprintf("+ %s (%d)\n", file.Name(), found))
+			loadedBuffer.WriteString(fmt.Sprintf("+ %s (%d) [Multible instances of plugin loaded]\n", file.Name(), found))
 		} else {
 			unloadedBuffer.WriteString(fmt.Sprintf("- %s\n", file.Name()))
 		}
