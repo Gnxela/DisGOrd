@@ -24,7 +24,7 @@ type Config struct {
 	LoadedModules map[string]struct{}
 }
 
-var bot common.Bot = common.Bot{make([]*common.Guild, 0), make(map[string]*common.Guild, 0), "!", make(map[common.Priority][]*common.Command, 0)}
+var bot *common.Bot = &common.Bot{make([]*common.Guild, 0), make(map[string]*common.Guild, 0), "!", make(map[common.Priority][]*common.Command, 0)}
 var config Config //Would store in bot, but don't think modules need access to it.
 
 func init() {
@@ -144,17 +144,17 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 
 	//Three designated commands. Lazy evaluation means we wont be checking for admin unnessessarily.
 	if strings.HasPrefix(message.Content, bot.Prefix+"load") && checkAdmin(session, message.ChannelID, message.Author.ID) {
-		load(&bot, session, message)
+		load(bot, session, message)
 	} else if strings.HasPrefix(message.Content, bot.Prefix+"unload") && checkAdmin(session, message.ChannelID, message.Author.ID) {
-		unload(&bot, session, message)
+		unload(bot, session, message)
 	} else if strings.HasPrefix(message.Content, bot.Prefix+"list") && checkAdmin(session, message.ChannelID, message.Author.ID) {
-		list(&bot, session, message)
+		list(bot, session, message)
 	} else {
 		for _, commands := range bot.Commands {
 			for _, element := range commands {
 				if !element.IsAdminOnly() || (element.IsAdminOnly() && checkAdmin(session, message.ChannelID, message.Author.ID)) {
-					if element.ShouldFire(&bot, message) {
-						if !element.Fire(&bot, session, message) {
+					if element.ShouldFire(bot, message) {
+						if !element.Fire(bot, session, message) {
 							break
 						}
 					}
@@ -267,7 +267,7 @@ func loadModule(module string) (err error) {
 	command.ShouldFire = shouldFire.(func(*common.Bot, *discordgo.MessageCreate) bool)
 	command.IsAdminOnly = isAdminOnly.(func() bool)
 
-	data := command.GetData(&bot)
+	data := command.GetData(bot)
 
 	bot.Commands[data.Priority] = append(bot.Commands[data.Priority], &command)
 	config.LoadedModules[module] = struct{}{}
