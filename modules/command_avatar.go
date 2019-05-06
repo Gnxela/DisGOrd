@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"strings"
 
-	"../Common"
+	"../common"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func GetData(bot *common.Bot) common.Data {
-	return common.Data{"Ping", "Pongs and pings. Used for testing only.", "!ping", common.PRIORITY_HIGHEST}
+	return common.Data{"Avatar", "Provides a link to your avatar.", "!avatar", common.PRIORITY_LOW}
 }
 
 func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool {
-	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, pong!", message.Author.ID))
+	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, %s", message.Author.ID, message.Author.AvatarURL("")))
 	return true
 }
 
 func ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) bool {
-	return strings.HasPrefix(message.Content, bot.Prefix+"ping")
+	return strings.HasPrefix(message.Content, bot.Prefix+"avatar")
 }
 
 func IsAdminOnly() bool {

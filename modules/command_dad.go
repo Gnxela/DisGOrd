@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"../Common"
+	"../common"
 
 	"github.com/bwmarrin/discordgo"
 )

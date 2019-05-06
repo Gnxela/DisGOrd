@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"strings"
 
-	"../Common"
+	"../common"
 
 	"github.com/bwmarrin/discordgo"
 )

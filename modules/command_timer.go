@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"../Common"
+	"../common"
 
 	"github.com/bwmarrin/discordgo"
 )

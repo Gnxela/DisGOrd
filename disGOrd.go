@@ -14,7 +14,7 @@ import (
 	"strings"
 	"syscall"
 
-	"./Common"
+	"./common"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -22,6 +22,7 @@ import (
 type Config struct {
 	Token         string
 	LoadedModules map[string]struct{}
+	Bin	          string
 }
 
 var bot *common.Bot = &common.Bot{make([]*common.Guild, 0), make(map[string]*common.Guild, 0), "!", make(map[common.Priority][]*common.Command, 0)}
@@ -67,11 +68,17 @@ func main() {
 }
 
 func enableLoadedModules() {
+	failed := false
 	for module, _ := range config.LoadedModules {
 		err := loadModule(module)
 		if err != nil {
 			fmt.Printf("Failed to load '%s': %s\n", module, err)
+			delete(config.LoadedModules, module)
+			failed = true
 		}
+	}
+	if failed {
+		saveConfig()
 	}
 }
 
@@ -184,7 +191,7 @@ func load(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 		return
 	}
 	module := strs[1]
-	files, err := ioutil.ReadDir("./Modules")
+	files, err := ioutil.ReadDir(config.Bin)
 	if err != nil {
 		panic(err)
 	}
@@ -227,7 +234,7 @@ func unload(bot *common.Bot, session *discordgo.Session, message *discordgo.Mess
 }
 
 func loadModule(module string) (err error) {
-	p, err := plugin.Open("./Modules/" + module)
+	p, err := plugin.Open(config.Bin + module)
 	if err != nil {
 		return
 	}
@@ -277,7 +284,7 @@ func loadModule(module string) (err error) {
 }
 
 func list(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
-	files, err := ioutil.ReadDir("./Modules")
+	files, err := ioutil.ReadDir(config.Bin)
 	if err != nil {
 		panic(err)
 	}

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"../Common"
+	"../common"
 
 	"github.com/bwmarrin/discordgo"
 )
