@@ -2,7 +2,10 @@ GOCMD := go
 GOBUILD := $(GOCMD) build
 GOBUILD_PLUGIN := $(GOBUILD) --buildmode=plugin -i
 
-all: bin/disGOrd modules
+all: fmt bin/disGOrd modules
+
+fmt:
+	gofmt -w *.go common/*.go modules/*.go
 
 bin/disGOrd: disGOrd.go common/*
 	$(GOBUILD) -o bin/disGOrd .
@@ -39,6 +42,10 @@ MODULE_DEPS += bin/modules/command_roll.so
 bin/modules/command_timer.so: modules/command_timer.go common/*
 	$(GOBUILD_PLUGIN) -o $@ $(word 1,$^)
 MODULE_DEPS += bin/modules/command_timer.so
+
+bin/modules/command_restrict.so: modules/command_restrict.go common/*
+	$(GOBUILD_PLUGIN) -o $@ $(word 1,$^)
+MODULE_DEPS += bin/modules/command_restrict.so
 
 modules: $(MODULE_DEPS)
 

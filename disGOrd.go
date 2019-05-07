@@ -2,11 +2,9 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -19,18 +17,25 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// Config for the bot that is loaded from a .json
 type Config struct {
 	Token         string
 	LoadedModules map[string]struct{}
-	Bin	          string
+	Bin           string
 }
 
-var bot *common.Bot = &common.Bot{make([]*common.Guild, 0), make(map[string]*common.Guild, 0), "!", make(map[common.Priority][]*common.Command, 0)}
-var config Config //Would store in bot, but don't think modules need access to it.
+var (
+	bot        *common.Bot = &common.Bot{make([]*common.Guild, 0), make(map[string]*common.Guild, 0), "!", make(map[common.Priority][]*common.Module, 0)}
+	config     Config
+	configFile string = "config/config.json"
+)
 
 func init() {
-	loadConfig()
-	if config.Token == "" {
+	common.LoadConfig(configFile, &config)
+	if config.LoadedModules == nil {
+		config.LoadedModules = make(map[string]struct{}, 0)
+	}
+	if config.Token == "" { //Load token from command line
 		t := ""
 		flag.StringVar(&t, "t", "", "Token")
 		flag.Parse()
@@ -39,7 +44,7 @@ func init() {
 			os.Exit(0)
 		}
 		config.Token = t
-		saveConfig()
+		common.SaveConfig(configFile, config)
 	}
 }
 
@@ -69,7 +74,7 @@ func main() {
 
 func enableLoadedModules() {
 	failed := false
-	for module, _ := range config.LoadedModules {
+	for module := range config.LoadedModules {
 		err := loadModule(module)
 		if err != nil {
 			fmt.Printf("Failed to load '%s': %s\n", module, err)
@@ -78,34 +83,7 @@ func enableLoadedModules() {
 		}
 	}
 	if failed {
-		saveConfig()
-	}
-}
-
-func saveConfig() {
-	configFile, _ := os.OpenFile("config.json", os.O_WRONLY|os.O_TRUNC, 0755) //Need to look into FileModes and general UNIX file permissions.
-	defer configFile.Close()
-	encoder := json.NewEncoder(configFile)
-	encoder.SetIndent("", "\t")
-	err := encoder.Encode(&config)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func loadConfig() {
-	configFile, _ := os.OpenFile("config.json", os.O_RDONLY|os.O_CREATE, 0755) //Need to look into FileModes and general UNIX file permissions.
-	defer configFile.Close()
-	decoder := json.NewDecoder(configFile)
-	config = Config{}
-	err := decoder.Decode(&config)
-	if err != nil {
-		if err == io.EOF {
-			config.LoadedModules = make(map[string]struct{}, 0) //When no file is read, map is never initialised, so we need to do it manually.
-			saveConfig()
-			return
-		}
-		panic(err)
+		common.SaveConfig(configFile, config)
 	}
 }
 
@@ -157,11 +135,11 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(message.Content, bot.Prefix+"list") && checkAdmin(session, message.ChannelID, message.Author.ID) {
 		list(bot, session, message)
 	} else {
-		for _, commands := range bot.Commands {
-			for _, element := range commands {
-				if !element.IsAdminOnly() || (element.IsAdminOnly() && checkAdmin(session, message.ChannelID, message.Author.ID)) {
-					if element.ShouldFire(bot, message) {
-						if !element.Fire(bot, session, message) {
+		for _, modules := range bot.Modules {
+			for _, module := range modules {
+				if !module.IsAdminOnly() || (module.IsAdminOnly() && checkAdmin(session, message.ChannelID, message.Author.ID)) {
+					if module.ShouldFire(bot, message) {
+						if !module.Fire(bot, session, message) {
 							break
 						}
 					}
@@ -214,17 +192,17 @@ func unload(bot *common.Bot, session *discordgo.Session, message *discordgo.Mess
 		return
 	}
 	module := strs[1]
-	for priority, commands := range bot.Commands {
-		for index, mod := range commands {
+	for priority, modules := range bot.Modules {
+		for index, mod := range modules {
 			if mod.Module == module {
 				/*
 					According to the docs: "A plugin is only initialized once, and cannot be closed.A plugin is only initialized once, and cannot be closed."
 					I need to look into what the garbaage disposal of Go, and see if me reloading the plugins is bad.
 					If plugins can't be unloaded and cleaned by GC, then I need to store them and reuse them, to avoid memory problems.
 				*/
-				bot.Commands[priority] = append(bot.Commands[priority][:index], bot.Commands[priority][index+1:]...)
+				bot.Modules[priority] = append(bot.Modules[priority][:index], bot.Modules[priority][index+1:]...)
 				delete(config.LoadedModules, module)
-				saveConfig()
+				common.SaveConfig(configFile, config)
 				session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, unloaded '%s'.", message.Author.ID, module))
 				return
 			}
@@ -233,12 +211,12 @@ func unload(bot *common.Bot, session *discordgo.Session, message *discordgo.Mess
 	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, failed to unload '%s'. Module not found (maybe it wasn't loaded?).", message.Author.ID, module))
 }
 
-func loadModule(module string) (err error) {
-	p, err := plugin.Open(config.Bin + module)
+func loadModule(moduleName string) (err error) {
+	p, err := plugin.Open(config.Bin + moduleName)
 	if err != nil {
 		return
 	}
-	command := common.Command{}
+	module := common.Module{}
 	getData, err := p.Lookup("GetData")
 	if err != nil {
 		return
@@ -268,18 +246,18 @@ func loadModule(module string) (err error) {
 			}
 		}
 	}()
-	command.Module = module
-	command.GetData = getData.(func(*common.Bot) common.Data)
-	command.Fire = fire.(func(*common.Bot, *discordgo.Session, *discordgo.MessageCreate) bool)
-	command.ShouldFire = shouldFire.(func(*common.Bot, *discordgo.MessageCreate) bool)
-	command.IsAdminOnly = isAdminOnly.(func() bool)
+	module.Module = moduleName
+	module.GetData = getData.(func(*common.Bot) common.Data)
+	module.Fire = fire.(func(*common.Bot, *discordgo.Session, *discordgo.MessageCreate) bool)
+	module.ShouldFire = shouldFire.(func(*common.Bot, *discordgo.MessageCreate) bool)
+	module.IsAdminOnly = isAdminOnly.(func() bool)
 
-	data := command.GetData(bot)
+	data := module.GetData(bot)
 
-	bot.Commands[data.Priority] = append(bot.Commands[data.Priority], &command)
-	config.LoadedModules[module] = struct{}{}
-	saveConfig()
-	fmt.Printf("Loaded %s.\n", module)
+	bot.Modules[data.Priority] = append(bot.Modules[data.Priority], &module)
+	config.LoadedModules[moduleName] = struct{}{}
+	common.SaveConfig(configFile, config)
+	fmt.Printf("Loaded %s.\n", moduleName)
 	return
 }
 
@@ -296,8 +274,8 @@ func list(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 			continue
 		}
 		found := 0
-		for _, commands := range bot.Commands {
-			for _, module := range commands {
+		for _, modules := range bot.Modules {
+			for _, module := range modules {
 				if module.Module == file.Name() {
 					found++
 				}

@@ -40,7 +40,7 @@ func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 				session.ChannelMessageSend(message.ChannelID, "<@"+message.Author.ID+">, !dota <time as mm:ss, before first rune at 00:00>")
 				return true
 			}
-			start = minutes * 60 + seconds
+			start = minutes*60 + seconds
 		} else {
 			val, err := strconv.ParseInt(timestamp, 10, 32)
 			if err != nil {
@@ -61,13 +61,13 @@ func run(start int64, session *discordgo.Session, message *discordgo.MessageCrea
 	var diff int64
 	active[message.Author.ID] = struct{}{}
 	if start > 15 {
-		<-time.After(time.Duration(start - 15) * time.Second)
+		<-time.After(time.Duration(start-15) * time.Second)
 	} else {
 		diff = 15 - start
 	}
 	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, runes!", message.Author.ID))
 	for i <= 18 {
-		<-time.After(5 * time.Minute - time.Duration(diff) * time.Second)
+		<-time.After(5*time.Minute - time.Duration(diff)*time.Second)
 		diff = 0
 		_, ok := active[message.Author.ID]
 		if !ok {

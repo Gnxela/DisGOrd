@@ -1,6 +1,7 @@
 DisGOrd
 config.json
 bin/
+config/
 
 # Binaries for programs and plugins
 *.exe

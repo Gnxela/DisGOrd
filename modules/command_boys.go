@@ -45,25 +45,6 @@ func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 		}
 	}
 	session.ChannelMessageSend(message.ChannelID, result)
-	/*
-		presenceSet := make(map[string]*discordgo.Presence, len(guild.Presences))
-		for _, presence := range guild.Presences {
-			presenceSet[presence.User.ID] = presence
-		}
-		response := ""
-		for i := 0; i < len(guild.Members); i++ {
-			member := guild.Members[i]
-			presence := presenceSet[member.User.ID]
-			fmt.Printf("%s %s %s\n", member.User.ID, member.User.Username, presence.Status)
-			if presence.Status == discordgo.StatusOnline {
-				response += member.User.Username + " "
-				for _, role := range presence.Roles {
-					_ = role
-				}
-				break
-			}
-		}
-		session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@"+message.Author.ID+">, %s.", response))*/
 	return true
 }
 
