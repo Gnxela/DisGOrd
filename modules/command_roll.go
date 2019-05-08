@@ -40,7 +40,7 @@ func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, rolling a dice with %s sides... %d", message.Author.ID, str, rand.Intn(int(sides))+1))
 		}
 	}
-	return false
+	return true
 }
 
 func ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) bool {

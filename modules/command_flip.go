@@ -29,7 +29,7 @@ func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 	} else {
 		session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, tails!", message.Author.ID))
 	}
-	return false
+	return true
 }
 
 func ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) bool {

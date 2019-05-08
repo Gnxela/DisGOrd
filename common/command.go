@@ -49,13 +49,11 @@ func (t *NumericalToken) matches(str string) bool {
 type StringToken struct{}
 
 func (t *StringToken) value(str string) interface{} {
-	i, _ := strconv.ParseInt(str, 10, 64)
-	return i
+	return str
 }
 
 func (t *StringToken) matches(str string) bool {
-	_, err := strconv.ParseInt(str, 10, 64)
-	return err == nil
+	return true
 }
 
 type Sequence struct {

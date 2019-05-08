@@ -145,12 +145,13 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(message.Content, bot.Prefix+"list") && checkAdmin(session, message.ChannelID, message.Author.ID) {
 		list(bot, session, message)
 	} else {
+	L:
 		for _, modules := range bot.Modules {
 			for _, module := range modules {
 				if !module.IsAdminOnly() || (module.IsAdminOnly() && checkAdmin(session, message.ChannelID, message.Author.ID)) {
 					if module.ShouldFire(bot, message) {
 						if !module.Fire(bot, session, message) {
-							break
+							break L
 						}
 					}
 				}
