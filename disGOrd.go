@@ -70,6 +70,16 @@ func main() {
 	close := make(chan os.Signal, 1)
 	signal.Notify(close, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-close
+
+	unloadModules()
+}
+
+func unloadModules() {
+	for _, modules := range bot.Modules {
+		for _, module := range modules {
+			module.Unload()
+		}
+	}
 }
 
 func enableLoadedModules() {
@@ -200,6 +210,7 @@ func unload(bot *common.Bot, session *discordgo.Session, message *discordgo.Mess
 					I need to look into what the garbaage disposal of Go, and see if me reloading the plugins is bad.
 					If plugins can't be unloaded and cleaned by GC, then I need to store them and reuse them, to avoid memory problems.
 				*/
+				mod.Unload()
 				bot.Modules[priority] = append(bot.Modules[priority][:index], bot.Modules[priority][index+1:]...)
 				delete(config.LoadedModules, module)
 				common.SaveConfig(configFile, config)
@@ -217,6 +228,14 @@ func loadModule(moduleName string) (err error) {
 		return
 	}
 	module := common.Module{}
+	load, err := p.Lookup("Load")
+	if err != nil {
+		return
+	}
+	unload, err := p.Lookup("Unload")
+	if err != nil {
+		return
+	}
 	getData, err := p.Lookup("GetData")
 	if err != nil {
 		return
@@ -247,6 +266,8 @@ func loadModule(moduleName string) (err error) {
 		}
 	}()
 	module.Module = moduleName
+	module.Load = load.(func())
+	module.Unload = unload.(func())
 	module.GetData = getData.(func(*common.Bot) common.Data)
 	module.Fire = fire.(func(*common.Bot, *discordgo.Session, *discordgo.MessageCreate) bool)
 	module.ShouldFire = shouldFire.(func(*common.Bot, *discordgo.MessageCreate) bool)
@@ -255,6 +276,7 @@ func loadModule(moduleName string) (err error) {
 	data := module.GetData(bot)
 
 	bot.Modules[data.Priority] = append(bot.Modules[data.Priority], &module)
+	module.Load()
 	config.LoadedModules[moduleName] = struct{}{}
 	common.SaveConfig(configFile, config)
 	fmt.Printf("Loaded %s.\n", moduleName)

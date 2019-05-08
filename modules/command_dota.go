@@ -11,6 +11,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func Load() {
+
+}
+
+func Unload() {
+
+}
+
 var (
 	active map[string]struct{} = make(map[string]struct{})
 )

@@ -10,6 +10,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func Load() {
+
+}
+
+func Unload() {
+
+}
+
 func GetData(bot *common.Bot) common.Data {
 	return common.Data{"Flip", "Flips a coin. Landing on either heads or tails.", "!flip", common.PRIORITY_MEDIUM}
 }

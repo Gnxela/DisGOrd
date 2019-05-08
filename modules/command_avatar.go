@@ -9,6 +9,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func Load() {
+
+}
+
+func Unload() {
+
+}
+
 func GetData(bot *common.Bot) common.Data {
 	return common.Data{"Avatar", "Provides a link to your avatar.", "!avatar", common.PRIORITY_LOW}
 }

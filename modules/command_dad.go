@@ -9,6 +9,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func Load() {
+
+}
+
+func Unload() {
+
+}
+
 func GetData(bot *common.Bot) common.Data {
 	return common.Data{"Dad", "Makes funny jokes.", "", common.PRIORITY_LOWEST}
 }

@@ -20,18 +20,20 @@ var (
 	lexer *common.Lexer = common.CreateLexer(common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"whitelist"}, &common.StringToken{}),
 		common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"blacklist"}, &common.StringToken{}),
 	)
-	dummy      int = Load()
 	config     *Config
 	configFile string = "config/command_restrict.json"
 )
 
-func Load() int {
+func Load() {
 	err := common.LoadConfig(configFile, config)
 	if err != nil {
 		config = &Config{false, false, make(map[string]struct{}, 0)}
 		common.SaveConfig(configFile, config)
 	}
-	return 0
+}
+
+func Unload() {
+	common.SaveConfig(configFile, config)
 }
 
 func GetData(bot *common.Bot) common.Data {

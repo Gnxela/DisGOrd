@@ -9,6 +9,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func Load() {
+
+}
+
+func Unload() {
+
+}
+
 func GetData(bot *common.Bot) common.Data {
 	return common.Data{"Ping", "Pongs and pings. Used for testing only.", "!ping", common.PRIORITY_HIGHEST}
 }
