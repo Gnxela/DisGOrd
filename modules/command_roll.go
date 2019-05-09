@@ -3,16 +3,20 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"strconv"
-	"strings"
 
 	"../common"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-func Load() {
+var (
+	lexer *common.Lexer
+)
 
+func Load() {
+	lexer = common.CreateLexer(common.CreateSequence(&common.AbsoluteToken{"!roll"}, &common.NumericalToken{}),
+		common.CreateSequence(&common.AbsoluteToken{"!roll"}),
+	)
 }
 
 func Unload() {
@@ -24,27 +28,18 @@ func GetData(bot *common.Bot) common.Data {
 }
 
 func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool {
-	strs := strings.Split(message.Content, " ")
-	if len(strs) < 2 {
+	i, values := lexer.ParseCommand(message.Content)
+	if i == 1 {
 		session.ChannelMessageSend(message.ChannelID, "<@"+message.Author.ID+">, !roll <sides>")
 		return true
 	}
-	str := strs[1]
-	sides, err := strconv.ParseInt(str, 10, 32)
-	if err != nil {
-		session.ChannelMessageSend(message.ChannelID, "<@"+message.Author.ID+">, !roll <sides>")
-	} else {
-		if sides <= 0 {
-			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, '%d' in not a valid number.", message.Author.ID, sides))
-		} else {
-			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, rolling a dice with %s sides... %d", message.Author.ID, str, rand.Intn(int(sides))+1))
-		}
-	}
+	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, rolling a dice with %d sides... %d", message.Author.ID, values[1].(int64), rand.Intn(int(values[1].(int64)))+1))
 	return true
 }
 
 func ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) bool {
-	return strings.HasPrefix(message.Content, bot.Prefix+"roll")
+	i, _ := lexer.ParseCommand(message.Content)
+	return i >= 0
 }
 
 func IsAdminOnly() bool {

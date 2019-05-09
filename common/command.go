@@ -64,8 +64,7 @@ type Lexer struct {
 	sequences []*Sequence
 }
 
-//Seperate token and input index
-
+// Trailing OptionalTokens don't work. Not enough input
 // Should REALLY be using trees here, a FSM will work for now
 func (l *Lexer) ParseCommand(input string) (int, []interface{}) {
 	splitInput := strings.Split(input, " ")
