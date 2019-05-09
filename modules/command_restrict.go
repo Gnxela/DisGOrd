@@ -38,7 +38,7 @@ func Unload() {
 }
 
 func GetData(bot *common.Bot) common.Data {
-	return common.Data{"Restrict", "Restricts the channels in which commands can be used.", "!restrict {enable|disable}. !restrict {add|remove} [ChannelID]. !restrict {blacklist|whitelist}", common.PRIORITY_HIGHEST}
+	return common.Data{"Restrict", "Restricts the channels in which commands can be used.", "!restrict {add|remove} [ChannelID]. !restrict {blacklist|whitelist}", common.PRIORITY_HIGHEST}
 }
 
 func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool {
