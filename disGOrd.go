@@ -146,7 +146,8 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 		list(bot, session, message)
 	} else {
 	L:
-		for _, modules := range bot.Modules {
+		for priority := int(common.PRIORITY_CANCEL); priority <= int(common.PRIORITY_OBSERVE); priority++ {
+			modules := bot.Modules[common.Priority(priority)]
 			for _, module := range modules {
 				if !module.IsAdminOnly() || (module.IsAdminOnly() && checkAdmin(session, message.ChannelID, message.Author.ID)) {
 					if module.ShouldFire(bot, message) {

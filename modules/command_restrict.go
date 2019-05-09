@@ -20,6 +20,7 @@ var (
 		common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"remove"}, &common.StringToken{}),
 		common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"blacklist"}),
 		common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"whitelist"}),
+		common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"status"}),
 	)
 	config     Config
 	configFile string = "config/command_restrict.json"
@@ -38,7 +39,7 @@ func Unload() {
 }
 
 func GetData(bot *common.Bot) common.Data {
-	return common.Data{"Restrict", "Restricts the channels in which commands can be used.", "!restrict {add|remove} [ChannelID]. !restrict {blacklist|whitelist}", common.PRIORITY_HIGHEST}
+	return common.Data{"Restrict", "Restricts the channels in which commands can be used.", "!restrict {add|remove} [ChannelID]. !restrict {status|blacklist|whitelist}", common.PRIORITY_HIGHEST}
 }
 
 func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool {
@@ -57,6 +58,9 @@ func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 		case 3: //Whitelist
 			config.Whitelist = true
 			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, whitelist enabled.", message.Author.ID))
+		case 4:
+			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, whitelist: %v, channels: %v.", message.Author.ID, config.Whitelist, config.Channels))
+			return true
 		default:
 			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, %s.", message.Author.ID, GetData(bot).Usage))
 			return true
