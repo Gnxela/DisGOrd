@@ -85,7 +85,6 @@ type Lexer struct {
 	sequences []*Sequence
 }
 
-// Trailing OptionalTokens don't work. Not enough input
 // Should REALLY be using trees here, a FSM will work for now
 func (l *Lexer) ParseCommand(command string) (int, []interface{}) {
 L:
@@ -94,9 +93,6 @@ L:
 		values := make([]interface{}, len(sequence.tokens))
 		for tokenIndex, rawToken := range sequence.tokens {
 			input = strings.TrimSpace(input) //Should not be doing this. Change later
-			if input == "" {
-				continue L
-			}
 			switch token := rawToken.(type) {
 			case *OptionalToken:
 				if token.matches(input) {
