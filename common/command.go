@@ -1,8 +1,13 @@
 package common
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
+)
+
+var (
+	stringTokenRegex *regexp.Regexp = regexp.MustCompile(`(?m)^(?:'(.*)'|"(.*)"|([^\s]*))`)
 )
 
 type token interface {
@@ -66,15 +71,23 @@ func (t *NumericalToken) consume(str string) string {
 type StringToken struct{}
 
 func (t *StringToken) value(str string) interface{} {
-	return strings.Split(str, " ")[0]
+	match := stringTokenRegex.FindStringSubmatch(str)
+	if match[1] != "" {
+		return match[1]
+	} else if match[2] != "" {
+		return match[2]
+	} else {
+		return match[3]
+	}
 }
 
 func (t *StringToken) matches(str string) bool {
-	return true
+	return stringTokenRegex.MatchString(str)
 }
 
 func (t *StringToken) consume(str string) string {
-	return str[len(t.value(str).(string)):]
+	loc := stringTokenRegex.FindStringIndex(str)
+	return str[loc[1]:]
 }
 
 type Sequence struct {
