@@ -10,16 +10,13 @@ import (
 )
 
 type Config struct {
-	Enabled   bool
 	Whitelist bool
 	Channels  map[string]struct{}
 }
 
 var (
 	//This does not allow for the changing of the prefix.
-	lexer *common.Lexer = common.CreateLexer(common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"enable"}),
-		common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"disable"}),
-		common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"add"}, &common.StringToken{}),
+	lexer *common.Lexer = common.CreateLexer(common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"add"}, &common.StringToken{}),
 		common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"remove"}, &common.StringToken{}),
 		common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"blacklist"}),
 		common.CreateSequence(&common.AbsoluteToken{"!restrict"}, &common.AbsoluteToken{"whitelist"}),
@@ -31,7 +28,7 @@ var (
 func Load() {
 	err := common.LoadConfig(configFile, &config)
 	if err != nil {
-		config = Config{false, false, make(map[string]struct{}, 0)}
+		config = Config{false, make(map[string]struct{}, 0)}
 		common.SaveConfig(configFile, config)
 	}
 }
@@ -48,22 +45,16 @@ func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 	if strings.HasPrefix(message.Content, bot.Prefix+"restrict") {
 		i, values := lexer.ParseCommand(message.Content)
 		switch i {
-		case 0: //Enable
-			config.Enabled = true
-			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, enabled.", message.Author.ID))
-		case 1: //Disable
-			config.Enabled = false
-			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, disabled.", message.Author.ID))
-		case 2: //Add
+		case 0: //Add
 			config.Channels[values[2].(string)] = struct{}{}
 			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, channel added.", message.Author.ID))
-		case 3: //Remove
+		case 1: //Remove
 			delete(config.Channels, values[2].(string))
 			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, channel removed.", message.Author.ID))
-		case 4: //Blacklist
+		case 2: //Blacklist
 			config.Whitelist = false
 			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, blacklist enabled.", message.Author.ID))
-		case 5: //Whitelist
+		case 3: //Whitelist
 			config.Whitelist = true
 			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, whitelist enabled.", message.Author.ID))
 		default:
@@ -73,12 +64,8 @@ func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 		common.SaveConfig(configFile, config)
 		return true
 	}
-	if config.Enabled {
-		_, ok := config.Channels[message.ChannelID]
-		return ok == config.Whitelist
-	} else {
-		return true
-	}
+	_, ok := config.Channels[message.ChannelID]
+	return ok == config.Whitelist
 }
 
 func ShouldFire(bot *common.Bot, message *discordgo.MessageCreate) bool {

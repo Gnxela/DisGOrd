@@ -18,9 +18,9 @@ MODULE_DEPS := bin/modules/command_avatar.so
 bin/modules/command_avatar.so: modules/command_avatar.go common/*
 	$(GOBUILD_PLUGIN) -o $@ $(word 1,$^)
 
-bin/modules/command_boys.so: modules/command_boys.go common/*
+bin/modules/command_call.so: modules/command_call.go common/*
 	$(GOBUILD_PLUGIN) -o $@ $(word 1,$^)
-MODULE_DEPS += bin/modules/command_boys.so
+MODULE_DEPS += bin/modules/command_call.so
 
 bin/modules/command_dad.so: modules/command_dad.go common/*
 	$(GOBUILD_PLUGIN) -o $@ $(word 1,$^)
