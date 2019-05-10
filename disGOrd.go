@@ -138,18 +138,18 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	}
 
 	//Three designated commands. Lazy evaluation means we wont be checking for admin unnessessarily.
-	if strings.HasPrefix(message.Content, bot.Prefix+"load") && checkAdmin(session, message.ChannelID, message.Author.ID) {
+	if strings.HasPrefix(message.Content, bot.Prefix+"load") && common.CheckAdmin(session, message.ChannelID, message.Author.ID) {
 		load(bot, session, message)
-	} else if strings.HasPrefix(message.Content, bot.Prefix+"unload") && checkAdmin(session, message.ChannelID, message.Author.ID) {
+	} else if strings.HasPrefix(message.Content, bot.Prefix+"unload") && common.CheckAdmin(session, message.ChannelID, message.Author.ID) {
 		unload(bot, session, message)
-	} else if strings.HasPrefix(message.Content, bot.Prefix+"list") && checkAdmin(session, message.ChannelID, message.Author.ID) {
+	} else if strings.HasPrefix(message.Content, bot.Prefix+"list") && common.CheckAdmin(session, message.ChannelID, message.Author.ID) {
 		list(bot, session, message)
 	} else {
 	L:
 		for priority := int(common.PRIORITY_CANCEL); priority <= int(common.PRIORITY_OBSERVE); priority++ {
 			modules := bot.Modules[common.Priority(priority)]
 			for _, module := range modules {
-				if !module.IsAdminOnly() || (module.IsAdminOnly() && checkAdmin(session, message.ChannelID, message.Author.ID)) {
+				if !module.IsAdminOnly() || (module.IsAdminOnly() && common.CheckAdmin(session, message.ChannelID, message.Author.ID)) {
 					if module.ShouldFire(bot, message) {
 						if !module.Fire(bot, session, message) {
 							break L
@@ -159,19 +159,6 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 			}
 		}
 	}
-}
-
-func checkAdmin(session *discordgo.Session, channelID string, userID string) bool {
-	return checkPermission(session, discordgo.PermissionAdministrator, channelID, userID)
-}
-
-func checkPermission(session *discordgo.Session, permission int, channelID string, userID string) bool {
-	permissions, err := session.State.UserChannelPermissions(userID, channelID)
-	if err != nil {
-		fmt.Printf("%s\n", err)
-		return false
-	}
-	return permissions&permission == permission
 }
 
 func load(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
