@@ -43,7 +43,7 @@ func GetData(bot *common.Bot) common.Data {
 }
 
 func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool {
-	if strings.HasPrefix(message.Content, bot.Prefix+"restrict") && common.CheckAdmin(session, message.Author.ID, message.ChannelID) {
+	if strings.HasPrefix(message.Content, bot.Prefix+"restrict") && common.CheckAdmin(session, message.ChannelID, message.Author.ID) {
 		i, values := lexer.ParseCommand(message.Content)
 		switch i {
 		case 0: //Add
