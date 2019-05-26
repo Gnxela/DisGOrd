@@ -7,7 +7,7 @@ all: fmt bin/disGOrd modules
 fmt:
 	gofmt -w *.go common/*.go modules/*.go
 
-bin/disGOrd: dirs disGOrd.go common/*
+bin/disGOrd: disGOrd.go common/* | dirs
 	$(GOBUILD) -o bin/disGOrd .
 
 dirs:
@@ -50,7 +50,11 @@ bin/modules/command_restrict.so: modules/command_restrict.go common/*
 	$(GOBUILD_PLUGIN) -o $@ $(word 1,$^)
 MODULE_DEPS += bin/modules/command_restrict.so
 
-modules: dirs $(MODULE_DEPS)
+bin/modules/command_in.so: modules/command_in.go common/*
+	$(GOBUILD_PLUGIN) -o $@ $(word 1,$^)
+MODULE_DEPS += bin/modules/command_in.so
+
+modules: $(MODULE_DEPS) | dirs
 
 clean:
 	rm -rf bin/disGOrd bin/modules/*
