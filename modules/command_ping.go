@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"../common"
@@ -22,7 +21,11 @@ func GetData(bot *common.Bot) common.Data {
 }
 
 func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool {
-	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, pong!", message.Author.ID))
+	ping := session.HeartbeatLatency()
+	embed := common.NewEmbed().
+		AddField("Ping", ping.String()).
+		SetColor(0x22aaff).InlineAllFields().MessageEmbed
+	session.ChannelMessageSendEmbed(message.ChannelID, embed)
 	return true
 }
 
