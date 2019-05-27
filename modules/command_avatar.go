@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"../common"
@@ -22,7 +21,11 @@ func GetData(bot *common.Bot) common.Data {
 }
 
 func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) bool {
-	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, %s", message.Author.ID, message.Author.AvatarURL("")))
+	url := message.Author.AvatarURL("")
+	embed := common.NewEmbed().
+		AddField("Avatar URL", url).
+		SetThumbnail(url).MessageEmbed
+	session.ChannelMessageSendEmbed(message.ChannelID, embed)
 	return true
 }
 

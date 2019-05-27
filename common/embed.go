@@ -2,6 +2,19 @@ package common
 
 /**
  * Taken from: https://gist.github.com/Necroforger/8b0b70b1a69fa7828b8ad6387ebb3835
+ * Methods:
+ * 		- NewEmbed()
+ * 		- SetTitle(s)
+ * 		- SetDescription(s)
+ * 		- AddField(name, value)
+ * 		- SetFooter(text[, icon[, proxy]])
+ * 		- SetImage(image[, proxy])
+ * 		- SetThumbnail(image[, proxy])
+ * 		- SetAuthor(name[, icon[, URL[, proxyURL]]])
+ * 		- SetURL(URL)
+ * 		- SetColor(color)
+ * 		- InlineAllFields()
+ * 		- Truncate()
 **/
 
 import (
@@ -25,7 +38,8 @@ const (
 
 //NewEmbed returns a new embed object
 func NewEmbed() *Embed {
-	return &Embed{&discordgo.MessageEmbed{}}
+	//TODO Should make the color configurable.
+	return (&Embed{&discordgo.MessageEmbed{}}).SetColor(0x22aaff)
 }
 
 //SetTitle ...

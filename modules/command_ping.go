@@ -24,7 +24,7 @@ func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 	ping := session.HeartbeatLatency()
 	embed := common.NewEmbed().
 		AddField("Ping", ping.String()).
-		SetColor(0x22aaff).InlineAllFields().MessageEmbed
+		InlineAllFields().MessageEmbed
 	session.ChannelMessageSendEmbed(message.ChannelID, embed)
 	return true
 }
