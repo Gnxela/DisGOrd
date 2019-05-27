@@ -71,8 +71,7 @@ func Fire(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 }
 
 func callRole(roleID string, bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
-	guildMapping := bot.ChannelMap[message.ChannelID]
-	guild, err := session.Guild(guildMapping.ID)
+	guild, err := session.Guild(message.GuildID)
 	if err != nil {
 		session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, %s", message.Author.ID, err))
 		return

@@ -25,7 +25,7 @@ type Config struct {
 }
 
 var (
-	bot        *common.Bot = &common.Bot{make([]*common.Guild, 0), make(map[string]*common.Guild, 0), "!", make(map[common.Priority][]*common.Module, 0)}
+	bot        *common.Bot = &common.Bot{make(map[string]*common.Guild, 0), "!", make(map[common.Priority][]*common.Module, 0)}
 	config     Config
 	configFile string = "config/config.json"
 )
@@ -104,20 +104,16 @@ func onReady(session *discordgo.Session, ready *discordgo.Ready) {
 	}
 	fmt.Printf("Logged into %d guilds.\n", len(guilds))
 	for _, g := range guilds {
-		guild := common.Guild{g.ID, false}
-		bot.Guilds = append(bot.Guilds, &guild)
-		go loadGuild(session, &guild)
+		guild := &common.Guild{g.ID, false}
+		bot.Guilds[g.ID] = guild
+		go loadGuild(session, guild)
 	}
 }
 
 func loadGuild(session *discordgo.Session, guild *common.Guild) {
-	g, err := session.Guild(guild.ID)
+	_, err := session.Guild(guild.ID)
 	if err != nil {
 		panic(err)
-	}
-
-	for _, channel := range g.Channels {
-		bot.ChannelMap[channel.ID] = guild
 	}
 
 	guild.Ready = true
@@ -125,7 +121,7 @@ func loadGuild(session *discordgo.Session, guild *common.Guild) {
 }
 
 func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
-	if !bot.ChannelMap[message.ChannelID].Ready { //Ignore messages to guilds that aren't ready.
+	if !bot.Guilds[message.GuildID].Ready { //Ignore messages to guilds that aren't ready.
 		return
 	}
 
@@ -293,11 +289,13 @@ func list(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 			}
 		}
 		if found == 1 {
-			loadedBuffer.WriteString(fmt.Sprintf("+ %s\n", file.Name()))
+			loadedBuffer.WriteString(file.Name())
+			loadedBuffer.WriteString("\n")
 		} else if found > 1 {
-			loadedBuffer.WriteString(fmt.Sprintf("+ %s (%d) [Multible instances of plugin loaded]\n", file.Name(), found))
+			loadedBuffer.WriteString(fmt.Sprintf("%s (%d) [Multible instances of plugin loaded]\n", file.Name(), found))
 		} else {
-			unloadedBuffer.WriteString(fmt.Sprintf("- %s\n", file.Name()))
+			unloadedBuffer.WriteString(file.Name())
+			unloadedBuffer.WriteString("\n")
 		}
 	}
 	if loadedBuffer.String() == "" {
@@ -306,5 +304,9 @@ func list(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 	if unloadedBuffer.String() == "" {
 		unloadedBuffer.WriteString("  None\n")
 	}
-	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, ```diff\nLoaded Modules:\n%sUnloaded Modules:\n%s```", message.Author.ID, loadedBuffer.String(), unloadedBuffer.String()))
+	embed := common.NewEmbed().
+		AddField("Loaded", loadedBuffer.String()).
+		AddField("Unloaded", unloadedBuffer.String()).
+		InlineAllFields().MessageEmbed
+	session.ChannelMessageSendEmbed(message.ChannelID, embed)
 }
