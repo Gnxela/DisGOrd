@@ -134,7 +134,9 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	}
 
 	//Three designated commands. Lazy evaluation means we wont be checking for admin unnessessarily.
-	if strings.HasPrefix(message.Content, bot.Prefix+"load") && common.CheckAdmin(session, message.ChannelID, message.Author.ID) {
+	if strings.HasPrefix(message.Content, bot.Prefix+"loadall") && common.CheckAdmin(session, message.ChannelID, message.Author.ID) {
+		loadall(bot, session, message)
+	} else if strings.HasPrefix(message.Content, bot.Prefix+"load") && common.CheckAdmin(session, message.ChannelID, message.Author.ID) {
 		load(bot, session, message)
 	} else if strings.HasPrefix(message.Content, bot.Prefix+"unload") && common.CheckAdmin(session, message.ChannelID, message.Author.ID) {
 		unload(bot, session, message)
@@ -157,10 +159,39 @@ func onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
 	}
 }
 
+func loadall(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
+	files, err := ioutil.ReadDir(config.Bin)
+	if err != nil {
+		panic(err)
+	}
+
+	var loaded int8
+L:
+	for _, file := range files {
+		if !strings.HasSuffix(file.Name(), ".so") {
+			continue
+		}
+		for _, modules := range bot.Modules {
+			for _, module := range modules {
+				if module.Module == file.Name() {
+					continue L
+				}
+			}
+		}
+		loaded++
+		err := loadModule(file.Name())
+		if err != nil {
+			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, failed to load '%s'. (%s)", message.Author.ID, file.Name(), err))
+		} else {
+			session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@%s>, loaded '%s'.", message.Author.ID, file.Name()))
+		}
+	}
+	session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@"+message.Author.ID+">, loaded %d modules.", loaded))
+}
 func load(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
 	strs := strings.SplitN(message.Content, " ", 2)
 	if len(strs) != 2 {
-		session.ChannelMessageSend(message.ChannelID, "<@"+message.Author.ID+">, !load <module>")
+		session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@"+message.Author.ID+">, %sload <module>", bot.Prefix))
 		return
 	}
 	module := strs[1]
@@ -183,7 +214,7 @@ func load(bot *common.Bot, session *discordgo.Session, message *discordgo.Messag
 func unload(bot *common.Bot, session *discordgo.Session, message *discordgo.MessageCreate) {
 	strs := strings.SplitN(message.Content, " ", 2)
 	if len(strs) != 2 {
-		session.ChannelMessageSend(message.ChannelID, "<@"+message.Author.ID+">, !unload <module>")
+		session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("<@"+message.Author.ID+">, %sunload <module>"), bot.Prefix)
 		return
 	}
 	module := strs[1]
