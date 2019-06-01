@@ -17,7 +17,10 @@ func SaveConfig(file string, config interface{}) {
 }
 
 func LoadConfig(file string, config interface{}) error {
-	configFile, _ := os.OpenFile(file, os.O_RDONLY|os.O_CREATE, 0755) //Need to look into FileModes and general UNIX file permissions.
+	configFile, err := os.OpenFile(file, os.O_RDONLY|os.O_CREATE, 0755) //Need to look into FileModes and general UNIX file permissions.
+	if err != nil {
+		return err
+	}
 	defer configFile.Close()
 	decoder := json.NewDecoder(configFile)
 	return decoder.Decode(config)

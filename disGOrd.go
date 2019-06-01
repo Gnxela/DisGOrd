@@ -31,9 +31,12 @@ var (
 )
 
 func init() {
-	common.LoadConfig(configFile, &config)
-	if config.LoadedModules == nil {
+	err := common.LoadConfig(configFile, &config)
+	if err != nil {
+		fmt.Printf("Config not found. Generating new config file.\nPlease edit the config file before running.\n")
 		config.LoadedModules = make(map[string]struct{}, 0)
+		common.SaveConfig(configFile, config)
+		os.Exit(0)
 	}
 	if config.Token == "" { //Load token from command line
 		t := ""
